@@ -19,7 +19,7 @@
 - Works with Redis clients such as [redigo](https://github.com/garyburd/redigo), [redis-py](https://github.com/andymccurdy/redis-py), [node_redis](https://github.com/NodeRedis/node_redis), and [jedis](https://github.com/xetorthio/jedis)
 - Multithreaded
 
-*This library is also avaliable as a [Go package](https://github.com/tidwall/redcon).*
+*This library is also avaliable for [Go](https://github.com/tidwall/redcon).*
 
 ## Example
 
