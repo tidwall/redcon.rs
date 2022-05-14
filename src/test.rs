@@ -50,7 +50,7 @@ fn connections() {
         // println!("closed: {}", conn.id());
     });
     s.tick = Some(|data| {
-        if data.lock().unwrap().value2 == N-1 {
+        if data.lock().unwrap().value2 == N - 1 {
             None
         } else {
             Some(Duration::from_millis(10))

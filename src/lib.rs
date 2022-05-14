@@ -50,6 +50,8 @@ impl std::fmt::Display for Error {
     }
 }
 
+impl std::error::Error for Error {}
+
 /// A client connection.
 pub struct Conn {
     id: u64,
@@ -154,7 +156,7 @@ impl Conn {
     ///
     /// This operation will gracefully shutdown the server by closing the all
     /// client connections, stopping the server listener, and waiting for the
-    /// server resources to free. 
+    /// server resources to free.
     pub fn shutdown(&mut self) {
         self.closed = true;
         self.shutdown = true;
@@ -369,20 +371,19 @@ pub struct Server<T> {
     /// Handle incoming connections.
     pub opened: Option<fn(&mut Conn, &T)>,
 
-    /// Handle closed connections. 
-    /// 
+    /// Handle closed connections.
+    ///
     /// If the connection was closed due to an error then that error is
     /// provided.
     pub closed: Option<fn(&mut Conn, &T, Option<Error>)>,
-    
+
     /// Handle ticks at intervals as defined by the returned [`Duration`].
-    /// 
+    ///
     /// The next tick will happen following the elapsed returned `Duration`.
-    /// 
+    ///
     /// Returning `None` will shutdown the server.
     pub tick: Option<fn(&T) -> Option<Duration>>,
 }
-
 
 /// Creates a new `Server` which will be listening for incoming connections on
 /// the specified address using the provided `data`.
