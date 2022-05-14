@@ -13,11 +13,13 @@
 
 ## Features
 
-- Create a [Fast](#benchmarks) custom Redis compatible server in Rust
+- Create a fast custom Redis compatible server in Rust
 - Simple API.
 - Support for pipelining and telnet commands.
 - Works with Redis clients such as [redigo](https://github.com/garyburd/redigo), [redis-py](https://github.com/andymccurdy/redis-py), [node_redis](https://github.com/NodeRedis/node_redis), and [jedis](https://github.com/xetorthio/jedis)
 - Multithreaded
+
+*This library is also avaliable as a [Go package](https://github.com/tidwall/redcon).*
 
 ## Example
 
