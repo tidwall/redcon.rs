@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::io;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -435,6 +435,7 @@ fn serve<T: Send + Sync + 'static>(s: &mut Server<T>) -> Result<(), Error> {
     let laddr = s.local_addr;
     drop(s);
 
+    let wg = Arc::new(AtomicI64::new(0));
     let conns: HashMap<u64, Arc<AtomicBool>> = HashMap::new();
     let conns = Arc::new(Mutex::new(conns));
     let data = Arc::new(data);
@@ -449,18 +450,23 @@ fn serve<T: Send + Sync + 'static>(s: &mut Server<T>) -> Result<(), Error> {
         // Connect to self to force initiate a shutdown.
         let _ = TcpStream::connect(&laddr);
     };
-    let mut threads = Vec::new();
     if let Some(tick) = tick {
         let data = data.clone();
         let shutdown = shutdown.clone();
-        threads.push(thread::spawn(move || {
+        let wg = wg.clone();
+        wg.fetch_add(1, Ordering::SeqCst);
+        thread::spawn(move || {
             while !shutdown.load(Ordering::SeqCst) {
                 match (tick)(&data) {
                     Some(delay) => thread::sleep(delay),
-                    None => init_shutdown(shutdown.clone(), &laddr),
+                    None => {
+                        init_shutdown(shutdown.clone(), &laddr);
+                        break;
+                    }
                 }
             }
-        }));
+            wg.fetch_add(-1, Ordering::SeqCst)
+        });
     }
     for stream in listener.incoming() {
         let shutdown = shutdown.clone();
@@ -493,7 +499,9 @@ fn serve<T: Send + Sync + 'static>(s: &mut Server<T>) -> Result<(), Error> {
                 let xcloser = Arc::new(AtomicBool::new(false));
                 let conns = conns.clone();
                 conns.lock().unwrap().insert(conn_id, xcloser.clone());
-                threads.push(thread::spawn(move || {
+                let wg = wg.clone();
+                wg.fetch_add(1, Ordering::SeqCst);
+                thread::spawn(move || {
                     let mut conn = Conn {
                         id: conn_id,
                         cmds: Vec::new(),
@@ -564,14 +572,15 @@ fn serve<T: Send + Sync + 'static>(s: &mut Server<T>) -> Result<(), Error> {
                         (closed)(&mut conn, &data, final_err);
                     }
                     conns.lock().unwrap().remove(&conn.id);
-                }));
+                    wg.fetch_add(-1, Ordering::SeqCst);
+                });
             }
             Err(_) => {}
         }
     }
     // Wait for all connections to complete and for their threads to terminate.
-    for thread in threads {
-        thread.join().unwrap();
+    while wg.load(Ordering::SeqCst) > 0 {
+        thread::sleep(Duration::from_millis(10));
     }
     Ok(())
 }
