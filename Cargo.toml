@@ -1,0 +1,10 @@
+[package]
+name = "redcon"
+version = "0.1.0"
+authors = ["Josh Baker <joshbaker77@gmail.com>"]
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/tidwall/redcon.rs"
+documentation = "https://docs.rs/redcon/"
+description = "Redis compatible server framework for Rust"
